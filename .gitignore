@@ -21,3 +21,6 @@ out/
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Editors
+.vscode/
