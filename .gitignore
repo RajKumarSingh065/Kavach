@@ -1,0 +1,23 @@
+.env
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Java / Gradle
+.gradle/
+build/
+bin/
+out/
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
