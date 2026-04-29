@@ -1,0 +1,141 @@
+# ============================================================================
+# Kavach — Hyperledger Fabric Network (Docker Compose)
+# ============================================================================
+# This is the FULL Fabric network config for production deployment.
+# For demo purposes, the gateway uses mockBlockchain.js instead.
+# To switch to real Fabric, replace mockBlockchain.js with fabricClient.js.
+# ============================================================================
+
+version: '3.8'
+
+networks:
+  kavach-net:
+    name: kavach-network
+
+volumes:
+  orderer.kavach.com:
+  peer0.org1.kavach.com:
+  peer0.org2.kavach.com:
+
+services:
+
+  # ─── Orderer ──────────────────────────────────────────────
+  orderer.kavach.com:
+    container_name: orderer.kavach.com
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+    working_dir: /root
+    command: orderer
+    ports:
+      - "7050:7050"
+      - "7053:7053"
+    volumes:
+      - orderer.kavach.com:/var/hyperledger/production/orderer
+    networks:
+      - kavach-net
+
+  # ─── Org1 Peer (IntelOps) ─────────────────────────────────
+  peer0.org1.kavach.com:
+    container_name: peer0.org1.kavach.com
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.org1.kavach.com
+      - CORE_PEER_ADDRESS=peer0.org1.kavach.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.org1.kavach.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.kavach.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.kavach.com:7051
+      - CORE_PEER_LOCALMSPID=Org1MSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "7051:7051"
+    volumes:
+      - peer0.org1.kavach.com:/var/hyperledger/production
+    depends_on:
+      - couchdb0
+    networks:
+      - kavach-net
+
+  # ─── Org2 Peer (AuditCell) ────────────────────────────────
+  peer0.org2.kavach.com:
+    container_name: peer0.org2.kavach.com
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.org2.kavach.com
+      - CORE_PEER_ADDRESS=peer0.org2.kavach.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.org2.kavach.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.kavach.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.kavach.com:9051
+      - CORE_PEER_LOCALMSPID=Org2MSP
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+    working_dir: /root
+    command: peer node start
+    ports:
+      - "9051:9051"
+    volumes:
+      - peer0.org2.kavach.com:/var/hyperledger/production
+    depends_on:
+      - couchdb1
+    networks:
+      - kavach-net
+
+  # ─── CouchDB for Org1 ─────────────────────────────────────
+  couchdb0:
+    container_name: couchdb0
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "5984:5984"
+    networks:
+      - kavach-net
+
+  # ─── CouchDB for Org2 ─────────────────────────────────────
+  couchdb1:
+    container_name: couchdb1
+    image: couchdb:3.3
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "7984:5984"
+    networks:
+      - kavach-net

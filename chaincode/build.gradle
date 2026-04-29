@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = 'com.kavach'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // Hyperledger Fabric Chaincode Shim
+    implementation 'org.hyperledger.fabric-chaincode-java:fabric-chaincode-shim:2.5.3'
+
+    // JSON processing
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Logging
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'org.slf4j:slf4j-simple:2.0.9'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+}
+
+shadowJar {
+    archiveBaseName.set('insiderthreat-chaincode')
+    archiveVersion.set('1.0.0')
+    mergeServiceFiles()
+    manifest {
+        attributes 'Main-Class': 'org.hyperledger.fabric.contract.ContractRouter'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.named('build') {
+    dependsOn shadowJar
+}
